@@ -62,7 +62,7 @@ I finally choose N = 12, and dt = 0.1.
 * Another:
   * I also consider about the effect degree of each source which may cause error. (see `src/MPC.cpp` **line 52-67**) 
 
-##Strategy to tackle latency problem
+### Strategy to tackle latency problem
 
 * To tackle 100ms latency for delivering actuators onto car, we need to predict the state which is 100ms after the measurement state. see `src/main.cpp` **line 138-144**. The prediction basically depends on update equations. But note 
   that we are at the car perspective when apply this prediction, so the original x, y, psi all set to 0.
