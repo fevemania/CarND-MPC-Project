@@ -1,16 +1,16 @@
 # CarND-Controls-MPC
 Self-Driving Car Engineer Nanodegree Program
 
----
+
 This goal of the project is to make a simulator car drive around the center of lane using model predictive control technique.
 
 ---
-# Describes about model and tuning
+## Describes about model and tuning
 
-##Bicycle Model 
+### Bicycle Model 
 
-In this repo, we use `bicycle model` as our car motion model. 
-`bicycle model` assume front two wheels act together, 
+In this repo, we use **bicycle model** as our car motion model. 
+**bicycle model** assume front two wheels act together, 
 so they can effectively be represented as one wheel. 
 The same holds for the two rear wheels because this model also assume 
 the front wheels are connected to the back wheels by a rigid beam with fixed length.
@@ -24,7 +24,7 @@ Under `bicycle model` assumption, the car state and actuator could be described 
 
 * actuator:
   * delta: the steering angle
-  * a: the acceleration along the longitudinal velocity of the car, which controls with throttle and breke.
+  * a: the acceleration along the longitudinal velocity of the car, which controls with throttle and brake.
 
 the update equation of our car model:
 * next_x = x * v * cos(psi) * dt
@@ -32,17 +32,19 @@ the update equation of our car model:
 * next_psi = psi + v * delta / Lf * dt
 * next_v = v + a * dt 
 
-`Note: ` In the file `src/main.cpp line 143` and `src/MPC.cpp line 107 and 110`, you may see 
-the next_psi formula is with `psi - v * delta / Lf * dt`, that is because in the simulator we use, a positive steering angle
-implies a right turn which is opposite to normal coordinate assumption.
+**Note:** In the file `src/main.cpp` **line 143** and `src/MPC.cpp` **line 107 and 110**, you may see 
+the next_psi formula is **psi - v * delta / Lf * dt**, because in the simulator we use, a positive steering angle implies a right turn which is opposite to normal coordinate assumption.
 
-##Tuning used in project
+### Tuning used in project
 
 * dt: the timestamp whenever the new actuator takes place. 
   * I tune this value as 0.2. I found that if set it too small, the car would 
 
 * N: This value let we predicted how far the future. 
   * If we set too small, car could see enough to take preparation action  
+
+
+
 
 I first tried dt = 0.1, N = 10. But N is too small to see enough to take preparation action to make slightly turing left or right.
 
@@ -55,15 +57,15 @@ But if I set dt to 0.2, it would be too long for new control command to send, wh
 I finally choose N = 12, and dt = 0.1.
 
 * preprocessing waypoints:
-  * I tranform the state value from map perspective to car perspective. (see `src/main.cpp` line 112-119)
+  * I tranform the state value from map perspective to car perspective. (see `src/main.cpp` **line 112-119**)
 
 * Another:
-  * I also consider about the effect degree of each source which may cause error. (see `src/MPC.cpp` line 52-67) 
+  * I also consider about the effect degree of each source which may cause error. (see `src/MPC.cpp` **line 52-67**) 
 
 ##Strategy to tackle latency problem
 
-* To tackle 100ms latency for delivering actuators onto car, we need to predict the state which is 100ms after the measurement state. see `src/main.cpp` line 138-144. The prediction basically depends on update equations. But note 
-that we are at the car perspective when apply this prediction, so the original x, y, psi all set to 0.
+* To tackle 100ms latency for delivering actuators onto car, we need to predict the state which is 100ms after the measurement state. see `src/main.cpp` **line 138-144**. The prediction basically depends on update equations. But note 
+  that we are at the car perspective when apply this prediction, so the original x, y, psi all set to 0.
 
 ---
 
@@ -105,11 +107,11 @@ that we are at the car perspective when apply this prediction, so the original x
 ## Tips
 
 1. It's recommended to test the MPC on basic examples to see if your implementation behaves as desired. One possible example
-is the vehicle starting offset of a straight line (reference). If the MPC implementation is correct, after some number of timesteps
-(not too many) it should find and track the reference line.
+  is the vehicle starting offset of a straight line (reference). If the MPC implementation is correct, after some number of timesteps
+  (not too many) it should find and track the reference line.
 2. The `lake_track_waypoints.csv` file has the waypoints of the lake track. You could use this to fit polynomials and points and see of how well your model tracks curve. NOTE: This file might be not completely in sync with the simulator so your solution should NOT depend on it.
 3. For visualization this C++ [matplotlib wrapper](https://github.com/lava/matplotlib-cpp) could be helpful.)
-4.  Tips for setting up your environment are available [here](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/23d376c7-0195-4276-bdf0-e02f1f3c665d)
+4. Tips for setting up your environment are available [here](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/23d376c7-0195-4276-bdf0-e02f1f3c665d)
 5. **VM Latency:** Some students have reported differences in behavior using VM's ostensibly a result of latency.  Please let us know if issues arise as a result of a VM environment.
 
 ## Editor Settings
