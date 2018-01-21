@@ -17,6 +17,10 @@ constexpr double pi() { return M_PI; }
 double deg2rad(double x) { return x * pi() / 180; }
 double rad2deg(double x) { return x * 180 / pi(); }
 
+
+// store previous throttle for predict future state (100ms after measurement)
+double prev_a = 0.0; 
+
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
 // else the empty string "" will be returned.
@@ -91,6 +95,7 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
+          double delta = j[1]["steering_angle"];
 
           /*
           * TODO: Calculate steering angle and throttle using MPC.
@@ -100,6 +105,53 @@ int main() {
           */
           double steer_value;
           double throttle_value;
+
+          vector<double> car_ptsx;
+          vector<double> car_ptsy;
+
+          // transform waypoints from map's perspective to car's perspective
+          for (int i = 0; i < ptsx.size(); i++) {
+            double dx = ptsx[i] - px;
+            double dy = ptsy[i] - py;
+            // used for plot in yellow line
+            car_ptsx.push_back(dx * cos(psi) + dy * sin(psi));
+            car_ptsy.push_back(dx * -sin(psi) + dy * cos(psi));
+          }
+
+          // fit the polynomial onto the reference 
+          Eigen::VectorXd ptsx_ = \
+            Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(car_ptsx.data(), car_ptsx.size());
+          Eigen::VectorXd ptsy_ = \
+            Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(car_ptsy.data(), car_ptsy.size());
+           
+          auto coeffs = polyfit(ptsx_, ptsy_, 3);
+
+          // calculate the cross track error and the orientation error
+          // 
+          // here because we already transform the view to car's perspective, so minus 0
+          double cte = polyeval(coeffs, 0) - 0;
+          double epsi = 0 - atan(coeffs[1]);
+
+          const double Lf = 2.67;
+
+          // to deal with 100ms latency, we need to predict state 100ms after our measurement.
+          double dt = 0.1;
+          double pred_x = 0 + v * dt;
+          double pred_y = 0;
+          double pred_psi = 0 - v * delta / Lf * dt;
+          double pred_v = v + prev_a * dt;
+          double pred_cte = cte + v * sin(epsi) * dt;
+          double pred_epsi = epsi + pred_psi;
+
+          Eigen::VectorXd state(6);
+          state << pred_x, pred_y, pred_psi, pred_v, pred_cte, pred_epsi;
+          // state << pred_x, pred_y, pred_psi, pred_v, cte, epsi;
+
+          auto result = mpc.Solve(state, coeffs);
+
+          
+          steer_value = result[0] / (deg2rad(25) * Lf);
+          prev_a = throttle_value = result[1];
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
@@ -113,13 +165,20 @@ int main() {
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
+          for (int i = 2; i < result.size(); ++i) {
+            if (i % 2 == 0)
+              mpc_x_vals.push_back(result[i]);
+            else
+              mpc_y_vals.push_back(result[i]);
+          }
+
 
           msgJson["mpc_x"] = mpc_x_vals;
           msgJson["mpc_y"] = mpc_y_vals;
 
           //Display the waypoints/reference line
-          vector<double> next_x_vals;
-          vector<double> next_y_vals;
+          vector<double> next_x_vals(car_ptsx);
+          vector<double> next_y_vals(car_ptsy);
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
@@ -129,7 +188,7 @@ int main() {
 
 
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+          // std::cout << msg << std::endl;
           // Latency
           // The purpose is to mimic real driving conditions where
           // the car does actuate the commands instantly.
